@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNIES Bienestar — Informe Semestral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  /* ── RESET & BASE ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:        #F7F6F2;
+    --surface:   #FFFFFF;
+    --border:    #E2E0D8;
+    --border-md: #C8C5BA;
+    --text:      #1A1916;
+    --muted:     #6B6860;
+    --accent:    #1D4ED8;
+    --accent-bg: #EEF2FF;
+    --danger:    #B91C1C;
+    --danger-bg: #FEF2F2;
+    --success:   #065F46;
+    --success-bg:#D1FAE5;
+    --warn-bg:   #FFFBEB;
+    --warn:      #92400E;
+    --font:      'DM Sans', sans-serif;
+    --mono:      'DM Mono', monospace;
+    --radius-sm: 6px;
+    --radius:    10px;
+    --radius-lg: 14px;
+    --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+  }
+  html { font-size: 14px; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── LAYOUT ── */
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+  .sidebar-sub {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .nav { padding: 12px 10px; flex: 1; }
+  .nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 8px;
+    margin: 16px 0 6px;
+  }
+  .nav-label:first-child { margin-top: 0; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background .12s, color .12s;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; stroke-width: 1.75; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--border);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 20px;
+    font-family: var(--mono);
+  }
+  .nav-item.active .nav-badge { background: var(--accent); color: #fff; }
+  .sidebar-footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+  }
+  .period-selector {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .period-selector select, .period-selector input {
+    font-family: var(--font);
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 7px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .period-selector select:focus, .period-selector input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .period-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+
+  /* ── MAIN ── */
+  .main { display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-title { font-size: 16px; font-weight: 500; }
+  .topbar-desc { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .content { padding: 24px 28px; flex: 1; }
+
+  /* ── SECTIONS ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── METRICS ── */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 500; font-family: var(--mono); }
+  .metric-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .fg { display: flex; flex-direction: column; gap: 4px; }
+  .fg.span2 { grid-column: span 2; }
+  .fg.span3 { grid-column: span 3; }
+  label { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  input, select, textarea {
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    width: 100%;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(29,78,216,.12);
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: background .12s, border-color .12s, transform .08s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg); border-color: var(--border-md); }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #1e40af; border-color: #1e40af; }
+  .btn-success { background: #059669; color: #fff; border-color: #059669; font-size: 14px; padding: 9px 18px; }
+  .btn-success:hover { background: #047857; }
+  .btn-danger { color: var(--danger); border-color: #fca5a5; background: none; padding: 5px 9px; }
+  .btn-danger:hover { background: var(--danger-bg); }
+  .btn-sm { font-size: 11px; padding: 4px 10px; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    background: var(--bg);
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #FAFAF8; }
+  .mono { font-family: var(--mono); font-size: 11px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-deporte  { background: #DBEAFE; color: #1e3a8a; }
+  .badge-cultura  { background: #EDE9FE; color: #4c1d95; }
+  .badge-salud    { background: #D1FAE5; color: #064e3b; }
+  .badge-perm     { background: #FEF3C7; color: #78350f; }
+  .badge-func     { background: #F3F4F6; color: #374151; }
+  .badge-doc      { background: #FCE7F3; color: #831843; }
+
+  /* ── ROW ACTIONS ── */
+  .row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .row-header h2 { font-size: 15px; font-weight: 500; }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .empty svg { width: 32px; height: 32px; margin: 0 auto 10px; display: block; opacity: .35; }
+
+  /* ── SNIES PREVIEW TABS ── */
+  .preview-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .ptab {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--mono);
+  }
+  .ptab.active { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--text);
+    color: #fff;
+    font-size: 13px;
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .2s, transform .2s;
+    z-index: 999;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; overflow: visible; }
+    .nav { display: flex; flex-wrap: wrap; padding: 8px; }
+    .nav-label { display: none; }
+    .sidebar-footer { width: 100%; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .content { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">SNIES Bienestar</div>
+      <div class="sidebar-sub">Informe semestral<br>Bienestar Universitario</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-label">Ingreso de datos</div>
+      <button class="nav-item active" onclick="showSection('dashboard')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Resumen
+      </button>
+      <button class="nav-item" onclick="showSection('actividades')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Actividades
+        <span class="nav-badge" id="nb-act">0</span>
+      </button>
+      <button class="nav-item" onclick="showSection('personal')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Personal
+        <span class="nav-badge" id="nb-pers">0</span>
+      </button>
+      <button class="nav-item" onclick="showSection('beneficiarios')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        Beneficiarios
+        <span class="nav-badge" id="nb-ben">0</span>
+      </button>
+
+      <div class="nav-label">Exportación</div>
+      <button class="nav-item" onclick="showSection('snies')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Vista SNIES
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="period-label">Período del informe</div>
+      <div class="period-selector">
+        <select id="sel-año" onchange="guardarConfig()">
+          <option>2023</option><option>2024</option><option selected>2025</option><option>2026</option>
+        </select>
+        <select id="sel-sem" onchange="guardarConfig()">
+          <option>1</option><option selected>2</option>
+        </select>
+      </div>
+      <div style="margin-top:8px;" class="period-label">Cód. unidad org.</div>
+      <input id="sel-unidad" value="1" style="font-size:12px;padding:5px 7px;" onchange="guardarConfig()">
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Resumen del período</div>
+        <div class="topbar-desc" id="topbar-desc">Vista general del informe semestral</div>
+      </div>
+      <button class="btn btn-success" onclick="exportarExcel()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="stroke-width:2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Exportar Excel
+      </button>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Actividades</div>
+            <div class="metric-value" id="m-act">0</div>
+            <div class="metric-sub">registradas</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Responsables</div>
+            <div class="metric-value" id="m-pers">0</div>
+            <div class="metric-sub">registros de personal</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Beneficiarios</div>
+            <div class="metric-value" id="m-ben">0</div>
+            <div class="metric-sub">total personas</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Presupuesto</div>
+            <div class="metric-value" id="m-pres" style="font-size:16px;">$0</div>
+            <div class="metric-sub">financiación nacional</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Estado del informe</div>
+          <div id="status-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Actividades por área</div>
+          <div id="area-breakdown" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+
+      <!-- ACTIVIDADES -->
+      <div class="section" id="sec-actividades">
+        <div class="card">
+          <div class="card-title">Nueva actividad</div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>Código actividad</label>
+              <input id="a-cod" placeholder="401.38.XX.XX" style="font-family:var(--mono);">
+            </div>
+            <div class="fg span2">
+              <label>Descripción</label>
+              <input id="a-desc" placeholder="Descripción completa de la actividad">
+            </div>
+            <div class="fg">
+              <label>Tipo bienestar</label>
+              <select id="a-tipo">
+                <option value="1">1 — Salud</option>
+                <option value="2">2 — Cultura</option>
+                <option value="3">3 — Permanencia</option>
+                <option value="4">4 — Fomento</option>
+                <option value="5">5 — Deporte</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>Fecha inicio</label>
+              <input type="date" id="a-fi">
+            </div>
+            <div class="fg">
+              <label>Fecha fin</label>
+              <input type="date" id="a-ff">
+            </div>
+            <div class="fg">
+              <label>Financiación nacional ($)</label>
+              <input type="number" id="a-fin" placeholder="0">
+            </div>
+            <div class="fg" style="justify-content:flex-end;">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="addActividad()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="stroke-width:2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Agregar actividad
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row-header">
+          <h2 id="lbl-act">0 actividades</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Código</th><th>Descripción</th><th>Tipo</th>
+              <th>F. inicio</th><th>F. fin</th><th>Financiación</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-act"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PERSONAL -->
+      <div class="section" id="sec-personal">
+        <div class="card">
+          <div class="card-title">Nuevo responsable</div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>Código actividad</label>
+              <input id="p-cod" placeholder="401.38.XX.XX" style="font-family:var(--mono);">
+            </div>
+            <div class="fg">
+              <label>Tipo documento</label>
+              <select id="p-td"><option>CC</option><option>CE</option><option>PA</option></select>
+            </div>
+            <div class="fg">
+              <label>Número documento</label>
+              <input id="p-nd" placeholder="Número de cédula">
+            </div>
+            <div class="fg span2">
+              <label>Nombre completo</label>
+              <input id="p-nom" placeholder="NOMBRE APELLIDO">
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="fg span2">
+              <label>Área</label>
+              <select id="p-area">
+                <option>Área de Recreación y Deporte</option>
+                <option>Área de Arte y Cultura</option>
+                <option>Área de Desarrollo Humano y Permanencia</option>
+                <option>Área de Salud</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Tipo vinculación</label>
+              <select id="p-vinc">
+                <option>Contratista</option><option>Funcionario</option><option>Docente</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Horas dedicación</label>
+              <input type="number" id="p-hrs" placeholder="64">
+            </div>
+            <div class="fg" style="justify-content:flex-end;">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="addPersonal()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="stroke-width:2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row-header">
+          <h2 id="lbl-pers">0 registros de personal</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Actividad</th><th>Documento</th><th>Nombre</th>
+              <th>Área</th><th>Vinculación</th><th>Horas</th><th></th>
+            </tr></thead>
+            <tbody id="tbody-pers"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BENEFICIARIOS -->
+      <div class="section" id="sec-beneficiarios">
+        <div class="card">
+          <div class="card-title">Registrar beneficiarios</div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>Código actividad</label>
+              <input id="b-cod" placeholder="401.38.XX.XX" style="font-family:var(--mono);">
+            </div>
+            <div class="fg">
+              <label>Tipo beneficiario</label>
+              <select id="b-tipo">
+                <option value="1">1 — Estudiante</option>
+                <option value="2">2 — Graduado</option>
+                <option value="3">3 — Docente</option>
+                <option value="4">4 — Administrativo</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Cantidad</label>
+              <input type="number" id="b-cant" placeholder="0">
+            </div>
+            <div class="fg" style="justify-content:flex-end;">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="addBenef()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="stroke-width:2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row-header">
+          <h2 id="lbl-ben">0 registros de beneficiarios</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Código actividad</th><th>Tipo</th><th>Cantidad</th><th></th></tr></thead>
+            <tbody id="tbody-ben"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SNIES -->
+      <div class="section" id="sec-snies">
+        <div class="card" style="margin-bottom:0;">
+          <div class="preview-tabs">
+            <button class="ptab active" id="pt-act" onclick="showPreview('act')">SNIES_ACT_BIENESTAR</button>
+            <button class="ptab" id="pt-rh" onclick="showPreview('rh')">SNIES_REC_HUMANO</button>
+            <button class="ptab" id="pt-ben" onclick="showPreview('ben')">SNIES_BENEFICIARIOS</button>
+          </div>
+          <div class="table-wrap" id="snies-wrap" style="max-height:480px;overflow-y:auto;"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+          <button class="btn btn-success" onclick="exportarExcel()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="stroke-width:2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Descargar Excel (.xlsx)
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /shell -->
+
+<script>
+/* ── DATA ── */
+let acts = [], pers = [], bens = [];
+let cfg = { año: '2025', sem: '2', unidad: '1' };
+const STORAGE_KEY = 'snies_bw_v1';
+
+const TIPO_LABEL = {1:'Salud',2:'Cultura',3:'Permanencia',4:'Fomento',5:'Deporte'};
+const TIPO_BADGE = {1:'salud',2:'cultura',3:'perm',4:'perm',5:'deporte'};
+const BEN_LABEL  = {1:'Estudiante',2:'Graduado',3:'Docente',4:'Administrativo'};
+const VINC_BADGE = {'Contratista':'badge-deporte','Funcionario':'badge-func','Docente':'badge-doc'};
+
+const SECTIONS = {
+  dashboard:     { title:'Resumen del período',       desc:'Vista general del informe semestral' },
+  actividades:   { title:'Actividades',               desc:'Registro de actividades de bienestar' },
+  personal:      { title:'Personal / Recursos humanos', desc:'Responsables por actividad' },
+  beneficiarios: { title:'Beneficiarios',             desc:'Conteo de personas beneficiadas' },
+  snies:         { title:'Vista previa SNIES',        desc:'Revisión de las hojas que se exportarán' }
+};
+
+/* ── PERSIST ── */
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({acts,pers,bens,cfg})); } catch(e){}
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      acts = d.acts||[]; pers = d.pers||[]; bens = d.bens||[]; cfg = d.cfg||cfg;
+      document.getElementById('sel-año').value   = cfg.año;
+      document.getElementById('sel-sem').value    = cfg.sem;
+      document.getElementById('sel-unidad').value = cfg.unidad;
+    }
+  } catch(e){}
+  renderAll();
+}
+function guardarConfig() {
+  cfg.año    = document.getElementById('sel-año').value;
+  cfg.sem    = document.getElementById('sel-sem').value;
+  cfg.unidad = document.getElementById('sel-unidad').value;
+  save();
+}
+
+/* ── NAVIGATION ── */
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  const info = SECTIONS[id];
+  document.getElementById('topbar-title').textContent = info.title;
+  document.getElementById('topbar-desc').textContent  = info.desc;
+  if (id === 'snies') showPreview('act');
+  if (id === 'dashboard') renderDashboard();
+}
+
+/* ── FORMAT ── */
+function fmtCOP(n) {
+  return '$' + parseInt(n||0).toLocaleString('es-CO');
+}
+function getAreaShort(area) {
+  if (area.includes('Deporte')) return 'Rec. y Deporte';
+  if (area.includes('Cultura')) return 'Arte y Cultura';
+  if (area.includes('Humano'))  return 'Des. Humano';
+  if (area.includes('Salud'))   return 'Salud';
+  return area;
+}
+function getAreaBadge(area) {
+  let cls = 'badge-deporte';
+  if (area.includes('Cultura')) cls = 'badge-cultura';
+  if (area.includes('Humano'))  cls = 'badge-perm';
+  if (area.includes('Salud'))   cls = 'badge-salud';
+  return `<span class="badge ${cls}">${getAreaShort(area)}</span>`;
+}
+
+/* ── TOAST ── */
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ── RENDER ── */
+function renderAll() {
+  renderActs(); renderPers(); renderBens(); renderMetrics(); renderDashboard();
+  updateBadges();
+}
+
+function updateBadges() {
+  document.getElementById('nb-act').textContent  = acts.length;
+  document.getElementById('nb-pers').textContent = pers.length;
+  document.getElementById('nb-ben').textContent  = bens.length;
+}
+
+function renderMetrics() {
+  document.getElementById('m-act').textContent  = acts.length;
+  document.getElementById('m-pers').textContent = pers.length;
+  const totalBen  = bens.reduce((s,b) => s + parseInt(b.cant||0), 0);
+  const totalPres = acts.reduce((s,a) => s + parseInt(a.fin||0), 0);
+  document.getElementById('m-ben').textContent  = totalBen.toLocaleString('es-CO');
+  document.getElementById('m-pres').textContent = fmtCOP(totalPres);
+}
+
+function renderActs() {
+  const tb = document.getElementById('tbody-act');
+  document.getElementById('lbl-act').textContent = acts.length + ' actividades';
+  if (!acts.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>No hay actividades. Agrega la primera en el formulario.</div></td></tr>'; return; }
+  tb.innerHTML = acts.map((a,i) => `
+    <tr>
+      <td class="mono">${a.cod}</td>
+      <td style="max-width:260px;word-break:break-word;">${a.desc}</td>
+      <td><span class="badge badge-${TIPO_BADGE[a.tipo]||'perm'}">${TIPO_LABEL[a.tipo]||a.tipo}</span></td>
+      <td class="mono" style="white-space:nowrap;">${a.fi||'—'}</td>
+      <td class="mono" style="white-space:nowrap;">${a.ff||'—'}</td>
+      <td class="mono" style="white-space:nowrap;">${fmtCOP(a.fin)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="delAct(${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderPers() {
+  const tb = document.getElementById('tbody-pers');
+  document.getElementById('lbl-pers').textContent = pers.length + ' registros de personal';
+  if (!pers.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">No hay personal registrado.</div></td></tr>'; return; }
+  tb.innerHTML = pers.map((p,i) => `
+    <tr>
+      <td class="mono">${p.cod}</td>
+      <td class="mono">${p.td} ${p.nd}</td>
+      <td>${p.nom}</td>
+      <td>${getAreaBadge(p.area)}</td>
+      <td><span class="badge ${VINC_BADGE[p.vinc]||'badge-func'}">${p.vinc}</span></td>
+      <td class="mono">${p.hrs}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="delPers(${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderBens() {
+  const tb = document.getElementById('tbody-ben');
+  document.getElementById('lbl-ben').textContent = bens.length + ' registros de beneficiarios';
+  if (!bens.length) { tb.innerHTML = '<tr><td colspan="4"><div class="empty">No hay beneficiarios registrados.</div></td></tr>'; return; }
+  tb.innerHTML = bens.map((b,i) => `
+    <tr>
+      <td class="mono">${b.cod}</td>
+      <td>${BEN_LABEL[b.tipo]||b.tipo}</td>
+      <td class="mono">${parseInt(b.cant||0).toLocaleString('es-CO')}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="delBen(${i})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderDashboard() {
+  /* estado checklist */
+  const checks = [
+    { label: 'Actividades registradas', ok: acts.length > 0, val: acts.length + ' actividades' },
+    { label: 'Personal asignado',       ok: pers.length > 0, val: pers.length + ' registros' },
+    { label: 'Beneficiarios cargados',  ok: bens.length > 0, val: bens.length + ' registros' },
+    { label: 'Período configurado',     ok: true,            val: cfg.año + ' — Sem. ' + cfg.sem },
+  ];
+  document.getElementById('status-list').innerHTML = checks.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+      <span style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+        background:${c.ok ? '#D1FAE5' : '#FEF3C7'};color:${c.ok ? '#065F46' : '#92400E'};">${c.ok ? '✓' : '!'}</span>
+      <span style="flex:1;">${c.label}</span>
+      <span style="color:var(--muted);font-family:var(--mono);font-size:11px;">${c.val}</span>
+    </div>`).join('');
+
+  /* actividades por área */
+  const areaMap = {};
+  acts.forEach(a => {
+    const tipo = TIPO_LABEL[a.tipo] || 'Otro';
+    areaMap[tipo] = (areaMap[tipo]||0) + 1;
+  });
+  const total = acts.length || 1;
+  document.getElementById('area-breakdown').innerHTML = Object.entries(areaMap).map(([k,v]) => {
+    const pct = Math.round(v / total * 100);
+    const clsMap = {'Salud':'salud','Cultura':'cultura','Permanencia':'perm','Deporte':'deporte','Fomento':'perm'};
+    return `<div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span><span class="badge badge-${clsMap[k]||'perm'}">${k}</span></span>
+        <span style="color:var(--muted);font-family:var(--mono);">${v} act. — ${pct}%</span>
+      </div>
+      <div style="height:5px;background:var(--border);border-radius:4px;">
+        <div style="height:5px;border-radius:4px;width:${pct}%;background:${k==='Deporte'?'#3b82f6':k==='Cultura'?'#8b5cf6':k==='Salud'?'#10b981':'#f59e0b'};"></div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty" style="padding:16px;">Sin actividades aún.</div>';
+}
+
+/* ── ADD / DELETE ── */
+function addActividad() {
+  const cod  = document.getElementById('a-cod').value.trim();
+  const desc = document.getElementById('a-desc').value.trim();
+  if (!cod || !desc) { toast('Ingresa código y descripción'); return; }
+  acts.push({ cod, desc, tipo: document.getElementById('a-tipo').value,
+    fi: document.getElementById('a-fi').value, ff: document.getElementById('a-ff').value,
+    fin: document.getElementById('a-fin').value || 0 });
+  ['a-cod','a-desc','a-fi','a-ff','a-fin'].forEach(id => document.getElementById(id).value = '');
+  save(); renderAll(); toast('Actividad agregada ✓');
+}
+function delAct(i) { acts.splice(i,1); save(); renderAll(); }
+
+function addPersonal() {
+  const cod = document.getElementById('p-cod').value.trim();
+  const nd  = document.getElementById('p-nd').value.trim();
+  if (!cod || !nd) { toast('Ingresa código de actividad y documento'); return; }
+  pers.push({ cod, td: document.getElementById('p-td').value, nd,
+    nom: document.getElementById('p-nom').value.trim(),
+    area: document.getElementById('p-area').value,
+    vinc: document.getElementById('p-vinc').value,
+    hrs: document.getElementById('p-hrs').value || 0 });
+  ['p-cod','p-nd','p-nom','p-hrs'].forEach(id => document.getElementById(id).value = '');
+  save(); renderAll(); toast('Responsable agregado ✓');
+}
+function delPers(i) { pers.splice(i,1); save(); renderAll(); }
+
+function addBenef() {
+  const cod  = document.getElementById('b-cod').value.trim();
+  const cant = document.getElementById('b-cant').value;
+  if (!cod || !cant) { toast('Ingresa código y cantidad'); return; }
+  bens.push({ cod, tipo: document.getElementById('b-tipo').value, cant });
+  ['b-cod','b-cant'].forEach(id => document.getElementById(id).value = '');
+  save(); renderAll(); toast('Beneficiarios registrados ✓');
+}
+function delBen(i) { bens.splice(i,1); save(); renderAll(); }
+
+/* ── SNIES PREVIEW ── */
+function showPreview(which) {
+  ['act','rh','ben'].forEach(k => document.getElementById('pt-'+k).classList.toggle('active', k===which));
+  const wrap = document.getElementById('snies-wrap');
+  const { año, sem, unidad } = cfg;
+  let cols, rows;
+  if (which === 'act') {
+    cols = ['AÑO','SEMESTRE','CODIGO_UNIDAD_ORGANIZACIONAL','CODIGO_ACTIVIDAD','DESCRIPCION_ACTIVIDAD',
+            'ID_TIPO_ACTIVIDAD_BIENESTAR','FECHA_INICIO','FECHA_FINAL','ID_FUENTE_NACIONAL','VLR_FINANCIACION_NACIONAL',
+            'ID_PAIS_FINANCIADOR','NOMBRE_ENTIDAD_FTE_INTERNAC','ID_FUENTE_INTERNACIONAL','VLR_FINANCIACION_INTERNACIONAL'];
+    rows = acts.map(a => [año,sem,unidad,a.cod,a.desc,a.tipo,a.fi,a.ff,1,parseInt(a.fin||0),'','','','']);
+  } else if (which === 'rh') {
+    cols = ['AÑO','SEMESTRE','CODIGO_UNIDAD_ORGANIZACIONAL','CODIGO_ACTIVIDAD','ID_TIPO_DOCUMENTO','NUM_DOCUMENTO','DEDICACION'];
+    rows = pers.map(p => [año,sem,unidad,p.cod,p.td,p.nd,parseInt(p.hrs||0)]);
+  } else {
+    cols = ['AÑO','SEMESTRE','CODIGO_UNIDAD_ORGANIZACIONAL','CODIGO_ACTIVIDAD','ID_TIPO_BENEFICIARIO','CANTIDAD_BENEFICIARIOS'];
+    rows = bens.map(b => [año,sem,unidad,b.cod,parseInt(b.tipo),parseInt(b.cant||0)]);
+  }
+  if (!rows.length) { wrap.innerHTML = '<div class="empty">No hay datos en esta hoja.</div>'; return; }
+  wrap.innerHTML = `<table>
+    <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(v=>`<td class="mono">${v}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>`;
+}
+
+/* ── EXPORT ── */
+function exportarExcel() {
+  if (!acts.length) { toast('Agrega actividades antes de exportar'); return; }
+  const { año, sem, unidad } = cfg;
+  const wb = XLSX.utils.book_new();
+
+  const actData = [
+    ['AÑO','SEMESTRE','CODIGO_UNIDAD_ORGANIZACIONAL','CODIGO_ACTIVIDAD','DESCRIPCION_ACTIVIDAD',
+     'ID_TIPO_ACTIVIDAD_BIENESTAR','FECHA_INICIO','FECHA_FINAL','ID_FUENTE_NACIONAL','VLR_FINANCIACION_NACIONAL',
+     'ID_PAIS_FINANCIADOR','NOMBRE_ENTIDAD_FTE_INTERNAC','ID_FUENTE_INTERNACIONAL','VLR_FINANCIACION_INTERNACIONAL'],
+    ...acts.map(a => [año,sem,unidad,a.cod,a.desc,parseInt(a.tipo),a.fi,a.ff,1,parseInt(a.fin||0),'','','',''])
+  ];
+  const rhData = [
+    ['AÑO','SEMESTRE','CODIGO_UNIDAD_ORGANIZACIONAL','CODIGO_ACTIVIDAD','ID_TIPO_DOCUMENTO','NUM_DOCUMENTO','DEDICACION'],
+    ...pers.map(p => [año,sem,unidad,p.cod,p.td,p.nd,parseInt(p.hrs||0)])
+  ];
+  const benData = [
+    ['AÑO','SEMESTRE','CODIGO_UNIDAD_ORGANIZACIONAL','CODIGO_ACTIVIDAD','ID_TIPO_BENEFICIARIO','CANTIDAD_BENEFICIARIOS'],
+    ...bens.map(b => [año,sem,unidad,b.cod,parseInt(b.tipo),parseInt(b.cant||0)])
+  ];
+
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(actData), 'SNIES_ACT_BIENESTAR');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rhData),  'SNIES_REC_HUMANO');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(benData), 'SNIES_BENEFICIARIOS');
+  XLSX.writeFile(wb, `SNIES_Bienestar_${año}-${sem}.xlsx`);
+  toast('Archivo exportado ✓');
+}
+
+/* ── INIT ── */
+load();
+</script>
+</body>
+</html>
